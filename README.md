@@ -20,7 +20,7 @@ accounts and cross-device sync.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Design & documentation | ✅ Complete |
-| 1 | Foundation (engine, character, dashboard) | ⬜ Not started |
+| 1 | Foundation (engine, character, dashboard) | ✅ Complete (`v0.1.0`) |
 | 2 | The Gate (workout tracking, XP, level-ups) | ⬜ Not started |
 | 3 | The System Awakens (quests, streaks, stats) | ⬜ Not started |
 | 4 | Ascension (auth, sync, multi-device) | ⬜ Not started |

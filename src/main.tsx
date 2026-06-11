@@ -1,0 +1,52 @@
+import '@fontsource/unbounded/700.css';
+import '@fontsource/unbounded/900.css';
+import '@fontsource/sora/400.css';
+import '@fontsource/sora/600.css';
+import '@fontsource/sora/700.css';
+import '@fontsource/martian-mono/400.css';
+import '@fontsource/martian-mono/700.css';
+import './styles/tokens.css';
+import './styles/app.css';
+
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { RouterProvider, createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
+import { registerSW } from 'virtual:pwa-register';
+import { loadManifest } from './character/manifest';
+import { SYSTEM } from './data/strings';
+import { installDevTools } from './dev/seed';
+import { Dashboard } from './routes/dashboard/Dashboard';
+
+const rootRoute = createRootRoute();
+
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Dashboard,
+});
+
+const router = createRouter({ routeTree: rootRoute.addChildren([indexRoute]) });
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+const updateSW = registerSW({
+  onNeedRefresh() {
+    if (window.confirm(SYSTEM.update)) void updateSW(true);
+  },
+});
+
+async function boot() {
+  await loadManifest(); // tiers are required before first render (theme + reducer config)
+  installDevTools();
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <RouterProvider router={router} />
+    </StrictMode>,
+  );
+}
+
+void boot();

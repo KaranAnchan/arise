@@ -1,0 +1,47 @@
+/* ============================================================================
+   Arise design tokens — "The System Window" (docs/04-DESIGN-SYSTEM.md)
+   Two chromatic systems with strict jobs:
+   - heat ramp  → information about the body (muscle activation only)
+   - aura ramp  → information about power (XP, levels, accents); BOUND TO TIER.
+     The --aura* values below are tier-1 defaults; manifest.applyTierTheme()
+     overrides them at boot and on tier-up, recoloring the whole interface.
+   ============================================================================ */
+:root {
+  /* static base */
+  --bg: #07090e;
+  --panel: #10141d;
+  --panel-2: #171d29;
+  --line: #232b3a;
+  --text: #edf1f7;
+  --muted: #8e99a8;
+  --faint: #566173;
+  --ok: #58c98a;
+  --warn: #e0b14c;
+  --down: #c95858;
+  --work: #3e9ed9;
+
+  /* heat ramp — kept verbatim from Shift + Lift, reserved for the body map */
+  --heat-0: #252c38;
+  --heat-1: #4a2c22;
+  --heat-2: #b2401f;
+  --heat-3: #ff7a1a;
+  --heat-4: #ffd166;
+
+  /* aura ramp — tier-bound (defaults = tier 1, The E-Rank Awakening) */
+  --aura: #c9d4e0;
+  --aura-hi: #eaf0f6;
+  --aura-deep: #39414c;
+  --aura-intensity: 0.15;
+
+  /* type */
+  --font-display: 'Unbounded', sans-serif;
+  --font-body: 'Sora', sans-serif;
+  --font-mono: 'Martian Mono', monospace;
+
+  /* shape & space */
+  --r-card: 14px;
+  --r-chip: 10px;
+  --r-input: 8px;
+  --gutter: 14px;
+  --max-w: 560px;
+}
