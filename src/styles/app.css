@@ -333,6 +333,13 @@ button {
   box-shadow: none;
 }
 
+.cta--link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .cta-note {
   text-align: center;
   margin-top: 8px;
@@ -372,6 +379,460 @@ button {
   margin: 14px 0 4px;
 }
 
+/* ---- body heatmap (ported visual rules from Shift + Lift) ------------------------ */
+.bodymap-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 10px 10px 6px;
+  margin: 12px 0;
+}
+
+.bodymap svg {
+  width: 100%;
+  display: block;
+}
+
+.bodymap .sil {
+  fill: var(--panel-2);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.bodymap .cut {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.8;
+  opacity: 0.8;
+}
+
+.bodymap stop {
+  transition: stop-color 0.4s;
+}
+
+.bodymap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--faint);
+  margin-top: 4px;
+}
+
+.legend-ramp {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--heat-0), var(--heat-1), var(--heat-2), var(--heat-3), var(--heat-4));
+}
+
+.bodymap-focus {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-align: center;
+  margin: 6px 0 2px;
+}
+
+/* ---- gate ------------------------------------------------------------------------- */
+.gate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0 8px;
+}
+
+.gate-back {
+  text-decoration: none;
+}
+
+.rank-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--aura);
+  border: 1px solid color-mix(in srgb, var(--aura) 40%, var(--line));
+  border-radius: var(--r-chip);
+  padding: 4px 8px;
+}
+
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.exercise-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+
+.exercise-card--done {
+  border-color: color-mix(in srgb, var(--ok) 35%, var(--line));
+}
+
+.exercise-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.done-mark {
+  font-size: 16px;
+  color: var(--faint);
+}
+
+.done-mark--on {
+  color: var(--ok);
+}
+
+.exercise-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.exercise-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.exercise-scheme {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+.exercise-caret {
+  color: var(--faint);
+}
+
+.exercise-body {
+  border-top: 1px solid var(--line);
+  padding: 12px;
+}
+
+.demo-canvas {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-input);
+  margin-bottom: 10px;
+}
+
+.demo-canvas svg {
+  width: 100%;
+  display: block;
+}
+
+.cue-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--aura);
+  margin: 8px 0 2px;
+}
+
+.cue-text {
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+/* ---- set logger -------------------------------------------------------------------- */
+.set-logger {
+  margin-top: 10px;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 4px 8px;
+  border-radius: var(--r-input);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.set-row--logged {
+  color: var(--text);
+  text-align: left;
+}
+
+.set-row--logged:active {
+  background: var(--panel-2);
+}
+
+.set-row--pending {
+  color: var(--faint);
+}
+
+.set-row--active {
+  background: var(--panel-2);
+  border: 1px solid color-mix(in srgb, var(--aura) 35%, var(--line));
+}
+
+.set-label {
+  color: var(--faint);
+  width: 24px;
+}
+
+.set-data {
+  flex: 1;
+}
+
+.grade {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.grade--beat {
+  color: var(--ok);
+}
+
+.grade--held {
+  color: var(--warn);
+}
+
+.grade--regressed {
+  color: var(--down);
+}
+
+.grade--new {
+  color: var(--aura);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.stepper button {
+  width: 34px;
+  height: 38px;
+  border-radius: var(--r-input);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.stepper-value {
+  min-width: 52px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.stepper-value small {
+  color: var(--faint);
+  font-weight: 400;
+}
+
+.log-btn {
+  margin-left: auto;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--r-input);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--bg);
+  background: linear-gradient(135deg, var(--aura), var(--aura-hi));
+}
+
+.set-last {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  margin: 6px 0 0;
+}
+
+.gate-foot {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(transparent, var(--bg) 30%);
+  padding: 10px 0 4px;
+  text-align: center;
+}
+
+.gate-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.gate-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--aura-deep), var(--aura));
+  transition: width 0.4s ease-out;
+}
+
+/* ---- overlays: tally + ceremony ----------------------------------------------------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gutter);
+}
+
+.tally-window {
+  width: min(440px, 100%);
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--aura) 30%, var(--line));
+  border-radius: var(--r-card);
+  padding: 16px;
+}
+
+.tally-lines {
+  margin: 12px 0 4px;
+}
+
+.tally-line {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 5px 0;
+  animation: tally-in 0.35s ease-out backwards;
+}
+
+@keyframes tally-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.tally-xp {
+  color: var(--aura-hi);
+  font-weight: 700;
+}
+
+.tally-total {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+  margin-bottom: 8px;
+}
+
+.tally .cta {
+  margin-top: 14px;
+}
+
+/* ceremony */
+.ceremony {
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  cursor: pointer;
+}
+
+.ceremony-inner {
+  width: min(440px, 100%);
+  text-align: center;
+}
+
+.ceremony-stage {
+  margin: 14px auto;
+  max-width: 300px;
+  animation: ceremony-reveal 0.7s ease-out;
+}
+
+@keyframes ceremony-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.ceremony-level {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 14px;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.ceremony-old {
+  font-size: 20px;
+  color: var(--faint);
+}
+
+.ceremony-arrow {
+  color: var(--aura);
+}
+
+.ceremony-new {
+  font-size: 48px;
+  color: var(--aura-hi);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--aura) 60%, transparent);
+}
+
+.ceremony-tier {
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.ceremony-arc {
+  color: var(--muted);
+  max-width: 360px;
+  margin: 6px auto;
+}
+
+.ceremony-stats {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.ceremony-stat {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.ceremony-stat .k {
+  color: var(--faint);
+  margin-right: 6px;
+}
+
+.ceremony-stat .v {
+  color: var(--aura-hi);
+  font-weight: 700;
+}
+
+.ceremony-hint {
+  margin-top: 18px;
+}
+
 /* ---- motion preferences ----------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .aura-particle {
@@ -381,6 +842,12 @@ button {
     transition: none;
   }
   .system-text .cursor {
+    animation: none;
+  }
+  .tally-line {
+    animation: none;
+  }
+  .ceremony-stage {
     animation: none;
   }
 }

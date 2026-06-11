@@ -21,7 +21,7 @@ accounts and cross-device sync.
 |---|---|---|
 | 0 | Design & documentation | ✅ Complete |
 | 1 | Foundation (engine, character, dashboard) | ✅ Complete (`v0.1.0`) |
-| 2 | The Gate (workout tracking, XP, level-ups) | ⬜ Not started |
+| 2 | The Gate (workout tracking, XP, level-ups) | ✅ Complete (`v0.2.0`) |
 | 3 | The System Awakens (quests, streaks, stats) | ⬜ Not started |
 | 4 | Ascension (auth, sync, multi-device) | ⬜ Not started |
 | 5 | Endgame (bosses, relics, polish, deploy) | ⬜ Not started |

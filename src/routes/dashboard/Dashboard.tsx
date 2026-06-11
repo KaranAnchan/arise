@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Link } from '@tanstack/react-router';
 import { applyTierTheme, getManifest } from '../../character/manifest';
 import { DOW_TO_KEY, SESSIONS, WEEK } from '../../data/program';
 import { SYSTEM } from '../../data/strings';
@@ -18,11 +19,9 @@ function TodayPanel() {
       <SystemWindow label={SYSTEM.dashboard.todayGate}>
         <h3 className="gate-name">{session.gateName}</h3>
         <p className="gate-focus">{session.focus}</p>
-        {/* Phase 2 wires this to the Gate flow */}
-        <button className="cta" disabled aria-disabled="true">
+        <Link to="/gate/$sessionId" params={{ sessionId: session.id }} className="cta cta--link">
           {SYSTEM.dashboard.enterGate}
-        </button>
-        <p className="cta-note system-text system-text--muted">[{SYSTEM.dashboard.gateSealed}]</p>
+        </Link>
       </SystemWindow>
     );
   }

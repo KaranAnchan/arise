@@ -168,7 +168,13 @@ export interface GameState {
   /** multiplier that will apply to the next gate's XP */
   multiplier: number;
   gatesCleared: number;
-  /** most recent session per exercise — drives set prefill + grading in the UI */
+  /** most recent session per exercise (any date) — history views */
   lastByExercise: Record<string, ExerciseSessionRecord>;
+  /** most recent session strictly before `now` — prefill + grading baseline */
+  prevByExercise: Record<string, ExerciseSessionRecord>;
+  /** today's (possibly in-progress) session per exercise */
+  todayByExercise: Record<string, ExerciseSessionRecord>;
+  /** session ids whose gate was cleared today */
+  clearedToday: string[];
   eventCount: number;
 }

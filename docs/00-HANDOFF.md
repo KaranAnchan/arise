@@ -30,6 +30,69 @@ picking up the project starts here, then reads `01-PRD.md` → `02-GDD.md` →
 
 ---
 
+## Phase 2 — The Gate · completed 2026-06-11 · tag v0.2.0
+
+### What shipped
+- **Full workout flow:** `/gate/$sessionId` route — gate header (rank badge = tier id),
+  System-voiced rationale, ported body heatmap with per-exercise focus, exercise cards
+  (expand → FK demo animation + cues + SetLogger), sticky gate progress + CLEAR GATE.
+- **SetLogger:** rows per scheme set, prefilled from the previous session (weight/reps),
+  ±2.5 kg / ±1 rep steppers, one-tap LOG (AC-3.2), tap a logged row to amend
+  (`set_amended`), live grade chips (▲ beat / ▶ held / ▼ down / ◆ new) vs the matching
+  set of the previous session, LAST line baseline.
+- **Engine additions:** `grade.ts` (tonnage grading — same rule as set XP),
+  `tally.ts` (itemized gate breakdown), reducer refactored into exported building blocks
+  (`sortEvents/collectFacts/buildTimelines/makeStreak/exerciseSessionXp`) consumed by both
+  reduce and tally; GameState gained `prevByExercise` / `todayByExercise` / `clearedToday`.
+- **TallyScreen:** staggered itemized lines, streak multiplier line, total, live XP bar.
+- **Ceremony:** level-up overlay (typewriter System text, character reveal, LV old→new,
+  stat deltas); tier-up variant re-themes the whole UI mid-ceremony + shows tier arc.
+- Ports from Shift + Lift at parity: `src/body/` (heatmap incl. focus transitions) and
+  `src/anim/` (18 FK demos, IntersectionObserver + visibility gating, reduced-motion).
+- `npm run smoke` (dashboard) + `scripts/smoke-gate.mjs`: drives a complete session through
+  the real UI — 6 exercises, 18 sets, clear, tally (+280 verified correct), ceremony, dashboard.
+
+### Decisions made (and why)
+- **Tally can never disagree with the bar**: `tallyGate` is built from the same exported
+  reducer primitives, and a unit test asserts tally.total === reducer XP delta (the
+  invariant test in `tally.test.ts`).
+- **Set XP accrues live as sets are logged**; the tally summarizes the whole session at
+  clear time. Ceremonies are only evaluated at the tally (level before = reduce without
+  this gate's events), so a mid-session level crossing celebrates at gate clear, not
+  mid-set. Sessions never finished show no ceremony — acceptable, recorded here.
+- **Grading = tonnage comparison, same-index set** — identical to the XP rule, so chips
+  never contradict the awarded XP.
+- **Prefill priority:** previous session same set → last logged set today → previous
+  session set 1 → 20 kg.
+- Ported skeleton.ts needed `| undefined` on optional props (`exactOptionalPropertyTypes`
+  is on in arise, wasn't in Shift + Lift).
+
+### Architecture / schema changes
+- No schema changes; no new event types. GameState extended (additive).
+
+### Known issues & deliberate deferrals
+- Tally count-up is a CSS stagger, not numeric counting — revisit in Phase 5 polish.
+- Gate is reachable by URL on non-gym days (training off-schedule is the user's call);
+  the dashboard only offers the CTA on gym days.
+- Off-plan training on rest days does not yet forfeit anything (Sanctuary events are
+  Phase 3; the GDD rule lands with the quest system).
+- `SYSTEM.dashboard.gateSealed` string is now unused (kept for reference).
+
+### Instructions for the next phase (Phase 3 — The System Awakens)
+- Quest generation (`src/engine/quests.ts`): pure function of (roster day type, date,
+  GameState/history); auto-claim by inspecting facts — emit `quest_completed` from a small
+  store-side watcher, NOT from inside the engine (engine stays pure).
+- Shift confirm: the dashboard Mandatory Quest panel emits `shift_confirmed` (one tap,
+  guard on `facts.shiftDates` via a `shiftConfirmedToday` GameState field you'll add).
+- Sanctuary: emit `rest_honored` for YESTERDAY (or any past rest day) on boot if no
+  training was logged that day — decide idempotency via the facts set, it's already deduped.
+- Profile route: stats panel exists on the dashboard; move/expand into `/profile` with
+  per-exercise charts from `lastByExercise` timelines (expose full timelines if needed —
+  `buildTimelines` is already exported).
+- Streak reset System commentary: copy lives in `strings.ts`, trigger from state diff.
+
+---
+
 ## Phase 1 — Foundation · completed 2026-06-11 · tag v0.1.0
 
 ### What shipped
