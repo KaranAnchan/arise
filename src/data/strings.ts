@@ -35,6 +35,32 @@ export const SYSTEM = {
     rec: 'REC',
   },
 
+  gate: {
+    back: '← WITHDRAW',
+    cleared: 'GATE CLEARED',
+    clearGate: 'CLEAR GATE',
+    viewTally: 'VIEW SPOILS',
+    progress: (done: number, total: number) => `${done}/${total} CLEARED`,
+    firstEncounter: 'FIRST ENCOUNTER — ESTABLISH THE BASELINE.',
+    last: 'LAST',
+    mindMuscle: 'MIND–MUSCLE',
+    form: 'FORM',
+    log: 'LOG',
+    save: 'SAVE',
+    set: (n: number) => `S${n}`,
+  },
+
+  tally: {
+    title: (gate: string) => `GATE CLEARED: ${gate.toUpperCase()}`,
+    sets: (name: string) => `SETS — ${name.toUpperCase()}`,
+    progression: (name: string) => `CONDITIONS MET — ${name.toUpperCase()}`,
+    weightUp: (name: string) => `WEIGHT INCREASED — ${name.toUpperCase()}`,
+    gateClear: 'GATE CLEAR',
+    streak: (mult: number) => `STREAK MULTIPLIER ×${mult.toFixed(1)}`,
+    total: 'TOTAL',
+    continue: 'CONTINUE',
+  },
+
   ceremony: {
     conditionsMet: 'CONDITIONS MET.',
     levelUp: 'LEVEL UP.',

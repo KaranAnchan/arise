@@ -16,6 +16,7 @@ import { loadManifest } from './character/manifest';
 import { SYSTEM } from './data/strings';
 import { installDevTools } from './dev/seed';
 import { Dashboard } from './routes/dashboard/Dashboard';
+import { GateView } from './routes/gate/GateView';
 
 const rootRoute = createRootRoute();
 
@@ -25,7 +26,13 @@ const indexRoute = createRoute({
   component: Dashboard,
 });
 
-const router = createRouter({ routeTree: rootRoute.addChildren([indexRoute]) });
+const gateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/gate/$sessionId',
+  component: GateView,
+});
+
+const router = createRouter({ routeTree: rootRoute.addChildren([indexRoute, gateRoute]) });
 
 declare module '@tanstack/react-router' {
   interface Register {

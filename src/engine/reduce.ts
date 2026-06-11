@@ -5,10 +5,14 @@
  * reduces to the identical state. Internally events are deduped by id and sorted by
  * (occurredAt, id) before anything else happens, and all XP awards are sums over
  * facts, not order-dependent accumulations.
+ *
+ * The building blocks (sortEvents/collectFacts/buildTimelines/makeStreak) are exported
+ * so tally.ts itemizes a single session with the SAME math — never a reimplementation.
  */
 import type {
   AriseEvent,
   EngineExercise,
+  EngineProgram,
   ExerciseSessionRecord,
   GameState,
   GateClearedPayload,
@@ -29,17 +33,17 @@ export function epochWeek(dateIso: string): number {
   return Math.floor((t / DAY_MS + 3) / 7);
 }
 
-interface SessionFact {
+export interface SessionFact {
   exerciseId: string;
   date: string;
   /** sparse by set index */
   sets: Map<number, LoggedSet>;
 }
 
-interface Facts {
+export interface Facts {
   /** key: `${exerciseId}|${date}` */
   sessions: Map<string, SessionFact>;
-  /** deduped `${sessionId}|${date}` → date */
+  /** deduped `${sessionId}|${date}` → fact */
   gateClears: Map<string, { sessionId: string; date: string }>;
   shiftDates: Set<string>;
   restDates: Set<string>;
@@ -47,7 +51,7 @@ interface Facts {
   quests: Map<string, string>;
 }
 
-function sortEvents(events: AriseEvent[]): AriseEvent[] {
+export function sortEvents(events: AriseEvent[]): AriseEvent[] {
   const byId = new Map<string, AriseEvent>();
   for (const e of events) if (!byId.has(e.id)) byId.set(e.id, e);
   return [...byId.values()].sort((a, b) =>
@@ -55,7 +59,7 @@ function sortEvents(events: AriseEvent[]): AriseEvent[] {
   );
 }
 
-function collectFacts(sorted: AriseEvent[]): Facts {
+export function collectFacts(sorted: AriseEvent[]): Facts {
   const facts: Facts = {
     sessions: new Map(),
     gateClears: new Map(),
@@ -125,24 +129,8 @@ function collectFacts(sorted: AriseEvent[]): Facts {
   return facts;
 }
 
-/** All sets at/above the top of the rep range, full set count, no weight drop = conditions met. */
-function progressionMet(ex: EngineExercise, sets: LoggedSet[], prevMaxWeight: number): boolean {
-  if (sets.length < ex.scheme.sets) return false;
-  if (!sets.every((s) => s.reps >= ex.scheme.repsHi)) return false;
-  const minWeight = Math.min(...sets.map((s) => s.weightKg));
-  return prevMaxWeight === 0 || minWeight >= prevMaxWeight;
-}
-
-export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string): GameState {
-  const sorted = sortEvents(events);
-  const facts = collectFacts(sorted);
-
-  const statPools: Record<StatTag, number> = { str: 0, vit: 0, agi: 0, rec: 0 };
-  const addPools = (tags: StatTag[], amount: number) => {
-    for (const t of tags) statPools[t] += amount;
-  };
-
-  // --- chronological per-exercise timelines -------------------------------------
+/** Per-exercise chronological session timelines (dense, sorted by set index). */
+export function buildTimelines(facts: Facts): Map<string, ExerciseSessionRecord[]> {
   const byExercise = new Map<string, ExerciseSessionRecord[]>();
   for (const s of [...facts.sessions.values()].sort((a, b) => (a.date < b.date ? -1 : 1))) {
     const sets = [...s.sets.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v);
@@ -151,6 +139,73 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     if (!list) byExercise.set(s.exerciseId, (list = []));
     list.push({ date: s.date, sets });
   }
+  return byExercise;
+}
+
+/** All sets at/above the top of the rep range, full set count, no weight drop = conditions met. */
+export function progressionMet(ex: EngineExercise, sets: LoggedSet[], prevMaxWeight: number): boolean {
+  if (sets.length < ex.scheme.sets) return false;
+  if (!sets.every((s) => s.reps >= ex.scheme.repsHi)) return false;
+  const minWeight = Math.min(...sets.map((s) => s.weightKg));
+  return prevMaxWeight === 0 || minWeight >= prevMaxWeight;
+}
+
+/** Streak helpers: a week is honored when every scheduled gym session cleared. */
+export function makeStreak(facts: Facts, program: EngineProgram) {
+  const clearsByWeek = new Map<number, Set<string>>();
+  for (const clear of facts.gateClears.values()) {
+    const w = epochWeek(clear.date);
+    let set = clearsByWeek.get(w);
+    if (!set) clearsByWeek.set(w, (set = new Set()));
+    set.add(clear.sessionId);
+  }
+  const honored = (w: number): boolean => {
+    const set = clearsByWeek.get(w);
+    return !!set && program.gymSessions.every((s) => set.has(s));
+  };
+  /** consecutive honored weeks strictly before week w */
+  const streakBefore = (w: number): number => {
+    let n = 0;
+    while (honored(w - 1 - n)) n += 1;
+    return n;
+  };
+  return { honored, streakBefore };
+}
+
+/**
+ * Per-exercise XP for one session record given its history position.
+ * Single source of truth — used by both the full reducer and the gate tally.
+ */
+export function exerciseSessionXp(
+  ex: EngineExercise | undefined,
+  rec: ExerciseSessionRecord,
+  prev: ExerciseSessionRecord | undefined,
+  allTimeMaxBefore: number,
+): { setXpSum: number; progression: boolean; weightUp: boolean; agiXp: number } {
+  let setXpSum = 0;
+  let agiXp = 0;
+  rec.sets.forEach((set, i) => {
+    const prevSet = prev?.sets[i];
+    const award = setXp(set.weightKg, set.reps, prevSet ? prevSet.weightKg * prevSet.reps : undefined);
+    setXpSum += award;
+    if (ex && ex.cls === 'accessory' && set.reps >= ex.scheme.repsHi) agiXp += award;
+  });
+  if (!ex) return { setXpSum, progression: false, weightUp: false, agiXp };
+  const maxWeight = Math.max(...rec.sets.map((s) => s.weightKg));
+  return {
+    setXpSum,
+    progression: progressionMet(ex, rec.sets, allTimeMaxBefore),
+    weightUp: allTimeMaxBefore > 0 && maxWeight > allTimeMaxBefore,
+    agiXp,
+  };
+}
+
+export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string): GameState {
+  const sorted = sortEvents(events);
+  const facts = collectFacts(sorted);
+  const byExercise = buildTimelines(facts);
+
+  const statPools: Record<StatTag, number> = { str: 0, vit: 0, agi: 0, rec: 0 };
 
   // --- gate-derived XP, bucketed per training date for the streak multiplier ----
   const dateBuckets = new Map<string, number>();
@@ -163,26 +218,18 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     let prev: ExerciseSessionRecord | undefined;
     let allTimeMax = 0;
     for (const rec of records) {
-      let sessionXp = 0;
-      rec.sets.forEach((set, i) => {
-        const prevSet = prev?.sets[i];
-        const award = setXp(set.weightKg, set.reps, prevSet ? prevSet.weightKg * prevSet.reps : undefined);
-        sessionXp += award;
-        // AGI: accessory sets completed at full programmed reps
-        if (ex && ex.cls === 'accessory' && set.reps >= ex.scheme.repsHi) statPools.agi += award;
-      });
-      if (ex) {
-        if (progressionMet(ex, rec.sets, allTimeMax)) {
-          sessionXp += XP.progression;
-          if (ex.cls === 'compound') addPools(['str'], XP.progression);
-        }
-        const maxWeight = Math.max(...rec.sets.map((s) => s.weightKg));
-        if (allTimeMax > 0 && maxWeight > allTimeMax) {
-          sessionXp += XP.weightUp;
-          if (ex.cls === 'compound') addPools(['str'], XP.weightUp);
-        }
-        allTimeMax = Math.max(allTimeMax, maxWeight);
+      const r = exerciseSessionXp(ex, rec, prev, allTimeMax);
+      let sessionXp = r.setXpSum;
+      statPools.agi += r.agiXp;
+      if (r.progression) {
+        sessionXp += XP.progression;
+        if (ex?.cls === 'compound') statPools.str += XP.progression;
       }
+      if (r.weightUp) {
+        sessionXp += XP.weightUp;
+        if (ex?.cls === 'compound') statPools.str += XP.weightUp;
+      }
+      if (ex) allTimeMax = Math.max(allTimeMax, ...rec.sets.map((s) => s.weightKg));
       addToDate(rec.date, sessionXp);
       prev = rec;
     }
@@ -193,24 +240,7 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     statPools.vit += XP.gateClear;
   }
 
-  // --- streaks: a week is honored when every scheduled gym session cleared -------
-  const clearsByWeek = new Map<number, Set<string>>();
-  for (const clear of facts.gateClears.values()) {
-    const w = epochWeek(clear.date);
-    let set = clearsByWeek.get(w);
-    if (!set) clearsByWeek.set(w, (set = new Set()));
-    set.add(clear.sessionId);
-  }
-  const honored = (w: number): boolean => {
-    const set = clearsByWeek.get(w);
-    return !!set && cfg.program.gymSessions.every((s) => set.has(s));
-  };
-  /** consecutive honored weeks strictly before week w */
-  const streakBefore = (w: number): number => {
-    let n = 0;
-    while (honored(w - 1 - n)) n += 1;
-    return n;
-  };
+  const { honored, streakBefore } = makeStreak(facts, cfg.program);
 
   // --- total XP -------------------------------------------------------------------
   let totalXp = 0;
@@ -233,14 +263,28 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
   const tierMultiplier = cfg.tiers[tierIndex]?.statMultiplier ?? 1;
 
   // --- current streak (relative to `now`; current week counts once honored) --------
-  const nowWeek = epochWeek(nowIso ?? sorted[sorted.length - 1]?.occurredAt.slice(0, 10) ?? '1970-01-01');
+  const nowDate = nowIso ?? sorted[sorted.length - 1]?.occurredAt.slice(0, 10) ?? '1970-01-01';
+  const nowWeek = epochWeek(nowDate);
   const streakWeeks = honored(nowWeek) ? streakBefore(nowWeek) + 1 : streakBefore(nowWeek);
 
-  // --- last session per exercise (UI prefill) --------------------------------------
+  // --- exercise views for the UI ----------------------------------------------------
+  // last:  most recent record overall (history charts)
+  // prev:  most recent record BEFORE today (prefill + grading baseline)
+  // today: today's in-progress/finished record
   const lastByExercise: Record<string, ExerciseSessionRecord> = {};
+  const prevByExercise: Record<string, ExerciseSessionRecord> = {};
+  const todayByExercise: Record<string, ExerciseSessionRecord> = {};
   for (const [exerciseId, records] of byExercise) {
     lastByExercise[exerciseId] = records[records.length - 1];
+    const before = records.filter((r) => r.date < nowDate);
+    if (before.length) prevByExercise[exerciseId] = before[before.length - 1];
+    const today = records.find((r) => r.date === nowDate);
+    if (today) todayByExercise[exerciseId] = today;
   }
+
+  const clearedToday = [...facts.gateClears.values()]
+    .filter((c) => c.date === nowDate)
+    .map((c) => c.sessionId);
 
   return {
     totalXp,
@@ -259,6 +303,9 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     multiplier: streakMultiplier(streakWeeks),
     gatesCleared: facts.gateClears.size,
     lastByExercise,
+    prevByExercise,
+    todayByExercise,
+    clearedToday,
     eventCount: sorted.length,
   };
 }
