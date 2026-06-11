@@ -30,6 +30,67 @@ picking up the project starts here, then reads `01-PRD.md` → `02-GDD.md` →
 
 ---
 
+## Phase 1 — Foundation · completed 2026-06-11 · tag v0.1.0
+
+### What shipped
+- Vite 8 + React 19 + TS strict scaffold with vite-plugin-pwa (manifest, SW, icon pipeline
+  via sharp from `public/icons/icon.svg`).
+- **Pure XP/leveling engine** (`src/engine/`): every GDD §2 formula, event-sourced reducer,
+  40 unit tests + fast-check permutation property test; 99% line coverage.
+- Tier manifest (`public/assets/characters/tiers.json`, 10 tiers with aura palettes + arc
+  texts) + `src/character/` (resolution, `applyTierTheme`, AuraPlaceholder, CharacterImage
+  with 404→placeholder fallback). WCAG contrast unit-tested for all tiers.
+- Dexie store (`src/store/`): events table, uuidv7, `appendEvent` as the single write path,
+  `useGameState` (liveQuery → reducer).
+- Program ported from Shift + Lift verbatim + game metadata (cls/statTags/gate names);
+  System voice strings module.
+- Dashboard: status window (character, level, XP bar, tier tease), roster strip, today
+  panel, stats row, streak line. Tier-bound aura recoloring works end to end.
+- Dev tools: `window.arise.seed(level)/reset()` (simulates honest training weeks through the
+  real rules); `npm run smoke` (playwright-core + system Chrome) boots, seeds, screenshots,
+  and fails on unexpected console errors/404s.
+
+### Decisions made (and why)
+- **`xpToNext(99)` is 7,284, not the 7,259 the GDD table estimated** — engine is canonical,
+  doc corrected.
+- Engine sorts events by `(occurredAt, id)` and dedupes by id *inside* `reduce()` — that's
+  what makes the permutation property hold; don't pre-sort outside.
+- Weight-up bonus compares against the **all-time max**, not the previous session, so
+  drop-and-raise oscillation can't farm +120s.
+- Progression bonus additionally requires no weight drop below the all-time max
+  (anti-sandbagging).
+- Seed simulation date-shifts to end on the **previous** week so no seeded events land in
+  the future of "today".
+- Missing-image 404s for `/assets/characters/*` are **expected by design** (placeholder is
+  the fallback); the smoke script whitelists them.
+- playwright-core with `channel: 'chrome'` (system Chrome) for browser verification — no
+  300 MB browser download in the repo.
+
+### Architecture / schema changes
+- Dexie v1 schema: `events (id, occurredAt, synced)`, `meta (key)`.
+- Event envelope + 8 event types implemented exactly as TDD §2.1.
+
+### Known issues & deliberate deferrals
+- "ENTER GATE" CTA is sealed (Phase 2 wires it). Shift confirm + Sanctuary honoring are
+  display-only (Phase 3 emits their events).
+- Full Lighthouse install audit deferred to Phase 5; SW/manifest/icons are generated and the
+  build precaches 35 entries (~820 KB incl. fonts). Bundle: 127 KB gz JS — under budget.
+- Ideal-case seed shows ~2,500–3,300 XP/week early (every exercise progressing every other
+  session); real-life pace will be slower. Revisit constants after Phase 2's live week.
+- `quest_completed` engine support exists; the generator ships in Phase 3.
+
+### Instructions for the next phase (Phase 2 — The Gate)
+- Set grading (beat/held/regressed) belongs in the engine as a pure helper on
+  `lastByExercise`; the tally screen must itemize from engine output, not recompute in UI.
+- `appendEvent` is the only write path — keep it that way for the sync queue's sake.
+- Port `src/body/` + `src/anim/` from `../shift-lift/src/`; they're framework-free DOM/SVG
+  modules — wrap, don't rewrite.
+- Ceremony triggers: compare `level` before/after the reducer run that includes the new
+  events (the tally screen already has both states in hand).
+- Use `npm run smoke` after wiring the Gate; extend it to log a set and clear a gate.
+
+---
+
 ## Phase 0 — Design & Documentation · completed 2026-06-11 · (docs only, no tag)
 
 ### What shipped

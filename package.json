@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@fontsource/martian-mono": "^5.2.7",
@@ -30,6 +31,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.8",
     "fast-check": "^4.8.0",
+    "playwright-core": "^1.60.0",
     "sharp": "^0.35.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",

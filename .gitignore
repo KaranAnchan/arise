@@ -5,6 +5,7 @@ node_modules/
 dist/
 dev-dist/
 coverage/
+screenshots/
 
 # Environment / secrets — Supabase keys live here, never commit
 .env
