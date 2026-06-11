@@ -65,7 +65,7 @@ xpToNext(level) = round(150 × 1.04^level)
 | 25 | 400 | ~1–2 levels/week |
 | 50 | 1,066 | ~2 sessions/level |
 | 75 | 2,841 | ~1 level/week |
-| 99 | 7,259 | ~3 weeks for the final level |
+| 99 | 7,284 | ~3 weeks for the final level |
 
 Cumulative 1→100 ≈ **185,000 XP ≈ 20 months** of consistent 3×/week training. Deliberate:
 a 100-level journey that *means* something maps to a real physical transformation timeline.
