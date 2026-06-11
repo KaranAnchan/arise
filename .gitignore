@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dev-dist/
+
+# Environment / secrets — Supabase keys live here, never commit
+.env
+.env.*
+!.env.example
+
+# Editor / OS noise
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.local
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
