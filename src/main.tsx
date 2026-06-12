@@ -17,6 +17,7 @@ import { SYSTEM } from './data/strings';
 import { installDevTools } from './dev/seed';
 import { Dashboard } from './routes/dashboard/Dashboard';
 import { GateView } from './routes/gate/GateView';
+import { Profile } from './routes/profile/Profile';
 import { useWatchers } from './store/watchers';
 
 /** Root shell: watchers (Sanctuary back-fill) run on every route. */
@@ -39,7 +40,15 @@ const gateRoute = createRoute({
   component: GateView,
 });
 
-const router = createRouter({ routeTree: rootRoute.addChildren([indexRoute, gateRoute]) });
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/profile',
+  component: Profile,
+});
+
+const router = createRouter({
+  routeTree: rootRoute.addChildren([indexRoute, gateRoute, profileRoute]),
+});
 
 declare module '@tanstack/react-router' {
   interface Register {

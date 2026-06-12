@@ -49,10 +49,17 @@ const make = (date: string, template: string, claim: QuestClaim, subject?: strin
 const tonnage = (rec: ExerciseSessionRecord | undefined): number =>
   rec ? rec.sets.reduce((sum, s) => sum + s.weightKg * s.reps, 0) : 0;
 
-/** GDD: "Log body weight" is offered ≤ 1×/week — due when none in the last 7 days. */
+/**
+ * GDD: "Log body weight" is offered ≤ 1×/week — due when none in the 7 days BEFORE
+ * today. Today's own entry is ignored so the quest stays in the list (completed)
+ * instead of vanishing the moment it's fulfilled — generation is stable all day.
+ */
 export function bodyweightDue(state: GameState, date: string): boolean {
   const today = dayNumber(date);
-  return !state.bodyweights.some((b) => today - dayNumber(b.date) < 7 && dayNumber(b.date) <= today);
+  return !state.bodyweights.some((b) => {
+    const d = dayNumber(b.date);
+    return d < today && today - d < 7;
+  });
 }
 
 /** Exercises of one session in program (insertion) order. */
@@ -81,8 +88,9 @@ export function generateQuests(
       exercises.find((e) => e.cls === 'compound' && state.prevByExercise[e.id]) ??
       exercises.find((e) => state.prevByExercise[e.id]);
     if (withHistory) out.push(make(date, 'beat_tonnage', 'auto', withHistory.id));
-    // review_form for a never-trained ("new-ish") exercise — unverifiable, manual claim
-    const fresh = exercises.find((e) => !state.lastByExercise[e.id]);
+    // review_form for a never-trained ("new-ish") exercise — unverifiable, manual claim.
+    // prevByExercise (strictly before today) keeps the pick stable once training starts.
+    const fresh = exercises.find((e) => !state.prevByExercise[e.id]);
     if (out.length < 3 && fresh) out.push(make(date, 'review_form', 'manual', fresh.id));
   }
 

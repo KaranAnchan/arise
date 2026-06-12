@@ -46,6 +46,30 @@ describe('generateQuests — templates per day type', () => {
     expect(bodyweightDue(s, '2026-06-08')).toBe(true); // 7 full days later
   });
 
+  it('keeps the generated list stable as today\'s events land (quests complete, never vanish)', () => {
+    // fulfilling log_bodyweight today must not remove it from the day's list —
+    // otherwise the auto-claim watcher loses the quest before it can pay out
+    const before = generateQuests('work', undefined, '2026-06-02', state([], '2026-06-02'), program);
+    const after = generateQuests(
+      'work',
+      undefined,
+      '2026-06-02',
+      state([ev('bodyweight_logged', { kg: 78, date: '2026-06-02' })], '2026-06-02'),
+      program,
+    );
+    expect(after.map((q) => q.id)).toEqual(before.map((q) => q.id));
+    // same for review_form: logging sets of the fresh exercise today keeps the quest
+    const gymBefore = generateQuests('gym', 'push', '2026-06-01', state([], '2026-06-01'), program);
+    const gymAfter = generateQuests(
+      'gym',
+      'push',
+      '2026-06-01',
+      state(logSession('bench', '2026-06-01', [[60, 8]]), '2026-06-01'),
+      program,
+    );
+    expect(gymAfter.map((q) => q.id)).toEqual(gymBefore.map((q) => q.id));
+  });
+
   it('is deterministic with stable ids and never duplicates templates', () => {
     const s = state([], '2026-06-01');
     const a = generateQuests('gym', 'push', '2026-06-01', s, program);

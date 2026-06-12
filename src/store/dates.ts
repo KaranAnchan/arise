@@ -16,6 +16,11 @@ export function mondayOf(d: Date = new Date()): Date {
   return out;
 }
 
+/** Whole calendar days from `a` to `b` (ISO dates, b ≥ a ⇒ positive). */
+export function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+}
+
 export function addDays(d: Date, days: number): Date {
   const out = new Date(d);
   out.setDate(out.getDate() + days);
