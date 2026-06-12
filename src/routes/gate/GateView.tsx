@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
+import { bossEpithet } from '../../engine/bosses';
+import { bossShortName } from '../../data/endgame';
 import { SESSIONS } from '../../data/program';
 import { SYSTEM } from '../../data/strings';
 import { sessionActivation } from '../../data/types';
@@ -51,6 +53,13 @@ export function GateView() {
       </header>
       <h1 className="gate-name">{session.gateName}</h1>
       <SystemText>{session.why.toUpperCase()}</SystemText>
+      {state.pendingBosses
+        .filter((b) => b.sessionId === sessionId)
+        .map((b) => (
+          <p className="system-text boss-banner" key={b.exerciseId}>
+            [{SYSTEM.boss.banner(bossShortName(b.exerciseId), bossEpithet(sessionId), b.milestone, b.repsLo)}]
+          </p>
+        ))}
 
       <BodyHeatmap
         activation={activation}

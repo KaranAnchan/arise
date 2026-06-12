@@ -116,6 +116,34 @@ export const SYSTEM = {
     tierUp: 'YOUR RANK HAS CHANGED.',
   },
 
+  boss: {
+    /** tally line for a kill */
+    felled: (name: string, epithet: string, milestone: number) =>
+      `BOSS FELLED — THE ${name} ${epithet} (${milestone} KG)`,
+    /** announcement at the prior session's tally (GDD §6) */
+    appeared: (name: string, epithet: string, milestone: number, reps: number) =>
+      `A GATE BOSS HAS APPEARED: THE ${name} ${epithet} — DEFEAT ${milestone} KG × ${reps}`,
+    /** banner inside the Gate while the encounter is live */
+    banner: (name: string, epithet: string, milestone: number, reps: number) =>
+      `GATE BOSS: THE ${name} ${epithet} — ${milestone} KG × ${reps}`,
+  },
+
+  relics: {
+    label: 'RELICS',
+    empty: 'NO RELICS YET. NAMED MILESTONES FORGE THEM.',
+  },
+
+  gallery: {
+    label: 'TIER GALLERY',
+    classified: (level: number) => `CLASSIFIED — LV ${level}`,
+  },
+
+  titles: {
+    label: 'TITLE',
+    equip: 'EQUIP',
+    equipped: 'EQUIPPED',
+  },
+
   settings: {
     link: 'SYSTEM',
     title: 'SYSTEM LINK',

@@ -1079,6 +1079,125 @@ button {
   margin-top: 10px;
 }
 
+/* ---- endgame: bosses / relics / gallery / titles --------------------------------------- */
+.boss-banner,
+.boss-announce {
+  color: var(--warn);
+  margin: 8px 0;
+  animation: boss-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes boss-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.tally-line--boss {
+  color: var(--warn);
+}
+
+.tally-line--boss .tally-xp {
+  color: var(--warn);
+}
+
+.equipped-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--aura-hi);
+  margin: 4px 0 0;
+}
+
+.relic-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.relic {
+  border: 1px solid color-mix(in srgb, var(--aura) 30%, var(--line));
+  border-radius: var(--r-chip);
+  background: var(--panel-2);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.relic-glyph {
+  color: var(--aura-hi);
+  font-size: 16px;
+}
+
+.relic-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+
+.relic-date {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--faint);
+}
+
+.tier-gallery {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.tier-slot {
+  text-align: center;
+}
+
+.tier-slot-aura {
+  height: 52px;
+  border-radius: var(--r-chip);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--faint);
+  background: var(--panel-2);
+}
+
+.tier-slot-name {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 4px 0 0;
+  line-height: 1.3;
+}
+
+.tier-slot--classified .tier-slot-name {
+  color: var(--faint);
+}
+
+.title-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
 /* ---- motion preferences ----------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .aura-particle {
@@ -1094,6 +1213,10 @@ button {
     animation: none;
   }
   .ceremony-stage {
+    animation: none;
+  }
+  .boss-banner,
+  .boss-announce {
     animation: none;
   }
 }

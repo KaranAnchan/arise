@@ -68,16 +68,10 @@ if (await trialBtn.count()) {
 
 await page.screenshot({ path: 'screenshots/dashboard-system.png', fullPage: true });
 
-// profile route: stats, records with sparklines
-await page.getByText('[PROFILE]').click();
-await page.getByText('SYSTEM RECORDS').waitFor({ timeout: 15_000 });
-const recordRows = await page.locator('.record-row').count();
-const sparklines = await page.locator('.sparkline').count();
-console.log(`profile: ${recordRows} record rows, ${sparklines} sparklines`);
-if (recordRows === 0) throw new Error('profile shows no records after seeding');
-await page.screenshot({ path: 'screenshots/profile.png', fullPage: true });
-
-// settings route: auth panel (local-only message without a backend) + a real import
+// settings route: auth panel (local-only message without a backend) + a real import.
+// Import runs against the SMALL seed on purpose: importing history heavier than the
+// later live log would (correctly) recontextualize those sessions as sandbagged and
+// shrink the total — the product flow is import-first, and the smoke mirrors it.
 await page.goto('http://localhost:5173/settings', { waitUntil: 'networkidle' });
 await page.getByText('IMPORTED SOUL').waitFor({ timeout: 15_000 });
 const authText = await page.locator('.settings .system-window').first().textContent();
@@ -97,6 +91,28 @@ await page.getByText('RECORDS ABSORBED').waitFor({ timeout: 15_000 });
 const importAfter = await waitForXp(importBefore + 1, 'import XP');
 console.log(`shift+lift import absorbed: +${importAfter - importBefore} XP retroactive`);
 await page.screenshot({ path: 'screenshots/settings.png', fullPage: true });
+await page.goto('http://localhost:5173/', { waitUntil: 'networkidle' });
+
+// profile route: stats, records with sparklines — reseed deep so the endgame
+// surfaces (titles, relics from named 50 kg milestones, gallery) have content
+await page.evaluate(async () => await window.arise.seed(60));
+await page.getByText('[PROFILE]').click();
+await page.getByText('SYSTEM RECORDS').waitFor({ timeout: 15_000 });
+const recordRows = await page.locator('.record-row').count();
+const sparklines = await page.locator('.sparkline').count();
+console.log(`profile: ${recordRows} record rows, ${sparklines} sparklines`);
+if (recordRows === 0) throw new Error('profile shows no records after seeding');
+
+const tierSlots = await page.locator('.tier-slot').count();
+const classified = await page.locator('.tier-slot--classified').count();
+const relicCount = await page.locator('.relic').count();
+const titleRows = await page.locator('.title-row').count();
+console.log(`endgame: ${tierSlots} tier slots (${classified} classified), ${relicCount} relics, ${titleRows} titles`);
+if (tierSlots !== 10) throw new Error(`expected 10 tier slots, got ${tierSlots}`);
+if (classified === 0 || classified === 10) throw new Error('classified split looks wrong');
+if (relicCount === 0) throw new Error('expected named-milestone relics at the deep seed');
+if (titleRows < 2) throw new Error('expected the title picker at the deep seed');
+await page.screenshot({ path: 'screenshots/profile.png', fullPage: true });
 
 await page.evaluate(async () => await window.arise.reset());
 
