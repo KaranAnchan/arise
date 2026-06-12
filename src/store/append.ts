@@ -6,7 +6,16 @@
 import type { AriseEvent, EventType, PayloadFor } from '../engine/types';
 import { db, getDeviceId, uuidv7 } from './db';
 
-const LOCAL_USER = 'local';
+export const LOCAL_USER = 'local';
+
+/** Set by the auth layer on sign-in/restore; new events carry the real uid from then on. */
+let activeUserId = LOCAL_USER;
+export function setActiveUserId(uid: string): void {
+  activeUserId = uid;
+}
+export function getActiveUserId(): string {
+  return activeUserId;
+}
 
 export async function appendEvent<T extends EventType>(
   type: T,
@@ -14,7 +23,7 @@ export async function appendEvent<T extends EventType>(
 ): Promise<AriseEvent<T>> {
   const event: AriseEvent<T> = {
     id: uuidv7(),
-    userId: LOCAL_USER, // rewritten to the auth uid on first sign-in (Phase 4)
+    userId: activeUserId, // 'local' until sign-in; old local rows are adopted then
     deviceId: await getDeviceId(),
     type,
     payload,
@@ -35,7 +44,7 @@ export async function appendEvents(
       const ts = e.occurredAt ? Date.parse(e.occurredAt) : now + i;
       return {
         id: uuidv7(ts),
-        userId: LOCAL_USER,
+        userId: activeUserId,
         deviceId,
         type: e.type,
         payload: e.payload,
