@@ -77,6 +77,27 @@ console.log(`profile: ${recordRows} record rows, ${sparklines} sparklines`);
 if (recordRows === 0) throw new Error('profile shows no records after seeding');
 await page.screenshot({ path: 'screenshots/profile.png', fullPage: true });
 
+// settings route: auth panel (local-only message without a backend) + a real import
+await page.goto('http://localhost:5173/settings', { waitUntil: 'networkidle' });
+await page.getByText('IMPORTED SOUL').waitFor({ timeout: 15_000 });
+const authText = await page.locator('.settings .system-window').first().textContent();
+console.log(`auth panel: ${authText.includes('NO BACKEND') ? 'local-only message' : 'backend configured'}`);
+
+const importBefore = await totalXp();
+const exportJson = JSON.stringify({
+  'sl2.day': 'push',
+  'sl2.log.bench': JSON.stringify([
+    { date: '2026-01-05', weightKg: 50, reps: [8, 8] },
+    { date: '2026-01-12', weightKg: 52.5, reps: [6, 6] },
+  ]),
+});
+await page.locator('.field--area').fill(exportJson);
+await page.locator('.cta', { hasText: 'ABSORB HISTORY' }).click();
+await page.getByText('RECORDS ABSORBED').waitFor({ timeout: 15_000 });
+const importAfter = await waitForXp(importBefore + 1, 'import XP');
+console.log(`shift+lift import absorbed: +${importAfter - importBefore} XP retroactive`);
+await page.screenshot({ path: 'screenshots/settings.png', fullPage: true });
+
 await page.evaluate(async () => await window.arise.reset());
 
 await browser.close();

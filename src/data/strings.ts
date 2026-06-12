@@ -116,5 +116,36 @@ export const SYSTEM = {
     tierUp: 'YOUR RANK HAS CHANGED.',
   },
 
+  settings: {
+    link: 'SYSTEM',
+    title: 'SYSTEM LINK',
+    back: '← RETURN',
+
+    authLabel: 'ASCENSION — CROSS-DEVICE LINK',
+    noBackend: 'NO BACKEND CONFIGURED. THE SYSTEM RUNS LOCAL-ONLY. SEE .ENV.EXAMPLE TO ASCEND.',
+    signedOutPitch: 'LINK AN ACCOUNT AND YOUR RECORDS FOLLOW YOU ACROSS DEVICES. NOTHING IS LOST EITHER WAY.',
+    signedInAs: (email: string) => `LINKED: ${email.toUpperCase()}`,
+    google: 'CONTINUE WITH GOOGLE',
+    emailPlaceholder: 'hunter@example.com',
+    magic: 'SEND MAGIC LINK',
+    magicSent: 'LINK SENT. CHECK YOUR MAIL.',
+    syncNow: 'SYNC NOW',
+    signOut: 'SEVER LINK',
+    signOutWarning: 'SEVERING WIPES THIS DEVICE. THE SYNCED LOG REMAINS ON THE SERVER.',
+    sync: {
+      off: 'LOCAL',
+      idle: 'SYNCED',
+      syncing: 'SYNCING…',
+      error: 'RETRYING',
+    } as Record<string, string>,
+
+    importLabel: 'IMPORTED SOUL — SHIFT+LIFT HISTORY',
+    importHint:
+      'IN SHIFT+LIFT, OPEN THE BROWSER CONSOLE AND RUN copy(JSON.stringify(localStorage)) — THEN PASTE HERE.',
+    importPlaceholder: '{"sl2.log.bench":"[…]", …}',
+    importBtn: 'ABSORB HISTORY',
+    imported: (n: number) => `${n} RECORDS ABSORBED. YOUR PAST COUNTS.`,
+  },
+
   update: 'THE SYSTEM HAS EVOLVED. RELOAD TO ASCEND.',
 } as const;

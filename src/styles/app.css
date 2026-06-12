@@ -995,6 +995,90 @@ button {
   margin: 8px 0 0;
 }
 
+/* ---- settings / auth / import --------------------------------------------------------- */
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sync-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+}
+
+.sync-dot .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.sync-dot--idle .dot {
+  background: var(--aura);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--aura) 60%, transparent);
+}
+
+.sync-dot--syncing .dot {
+  background: var(--aura-hi);
+  animation: blink 1s steps(1) infinite;
+}
+
+.sync-dot--error .dot {
+  background: var(--warn);
+}
+
+.field {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: var(--r-input);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+}
+
+.field--area {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  resize: vertical;
+  margin-bottom: 8px;
+}
+
+.auth-email {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.auth-email .field {
+  flex: 1;
+}
+
+.file-input {
+  display: block;
+  width: 100%;
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.cta--danger {
+  background: linear-gradient(135deg, var(--down), color-mix(in srgb, var(--down) 70%, #fff));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--down) 45%, transparent);
+}
+
+.settings .cta {
+  margin-top: 10px;
+}
+
 /* ---- motion preferences ----------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .aura-particle {

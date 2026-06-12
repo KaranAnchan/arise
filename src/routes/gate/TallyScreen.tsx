@@ -3,13 +3,14 @@
  * threshold was crossed — the Ceremony. Both "before" and "after" states come from
  * the reducer over real events, so the screen can never disagree with the engine.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { reduce } from '../../engine/reduce';
 import { tallyGate } from '../../engine/tally';
 import type { AriseEvent, SetPayload, GateClearedPayload } from '../../engine/types';
 import { SESSIONS } from '../../data/program';
 import { SYSTEM } from '../../data/strings';
+import { requestSync } from '../../store/sync';
 import { engineCfg, useEvents } from '../../store/useGameState';
 import { XPBar } from '../../ui/XPBar';
 import { Ceremony } from './Ceremony';
@@ -41,6 +42,11 @@ export function TallyScreen({ sessionId, date, onClose }: Props) {
   const events = useEvents();
   const navigate = useNavigate();
   const [ceremony, setCeremony] = useState(false);
+
+  // post-Gate tally is a sync trigger (TDD §2.2) — the session's spoils upload now
+  useEffect(() => {
+    void requestSync('tally');
+  }, []);
 
   const computed = useMemo(() => {
     if (!events) return undefined;

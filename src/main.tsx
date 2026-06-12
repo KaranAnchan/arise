@@ -18,6 +18,8 @@ import { installDevTools } from './dev/seed';
 import { Dashboard } from './routes/dashboard/Dashboard';
 import { GateView } from './routes/gate/GateView';
 import { Profile } from './routes/profile/Profile';
+import { Settings } from './routes/settings/Settings';
+import { initSync } from './store/sync';
 import { useWatchers } from './store/watchers';
 
 /** Root shell: watchers (Sanctuary back-fill) run on every route. */
@@ -46,8 +48,14 @@ const profileRoute = createRoute({
   component: Profile,
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: Settings,
+});
+
 const router = createRouter({
-  routeTree: rootRoute.addChildren([indexRoute, gateRoute, profileRoute]),
+  routeTree: rootRoute.addChildren([indexRoute, gateRoute, profileRoute, settingsRoute]),
 });
 
 declare module '@tanstack/react-router' {
@@ -65,6 +73,7 @@ const updateSW = registerSW({
 async function boot() {
   await loadManifest(); // tiers are required before first render (theme + reducer config)
   installDevTools();
+  initSync(); // no-op without a configured backend
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <RouterProvider router={router} />
