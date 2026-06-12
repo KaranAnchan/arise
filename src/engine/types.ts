@@ -176,5 +176,14 @@ export interface GameState {
   todayByExercise: Record<string, ExerciseSessionRecord>;
   /** session ids whose gate was cleared today */
   clearedToday: string[];
+  /** questIds already counted (deduped) — auto-claim guard */
+  completedQuests: string[];
+  /** today's Mandatory Quest already confirmed */
+  shiftConfirmedToday: boolean;
+  /** every date with at least one logged set, sorted ascending */
+  trainingDates: string[];
+  lastTrainingDate?: string | undefined;
+  /** bodyweight log, sorted by date ascending */
+  bodyweights: Array<{ date: string; kg: number }>;
   eventCount: number;
 }

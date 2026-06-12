@@ -49,6 +49,8 @@ export interface Facts {
   restDates: Set<string>;
   /** questId → template (deduped) */
   quests: Map<string, string>;
+  /** date → kg (last write per date wins) */
+  bodyweights: Map<string, number>;
 }
 
 export function sortEvents(events: AriseEvent[]): AriseEvent[] {
@@ -66,6 +68,7 @@ export function collectFacts(sorted: AriseEvent[]): Facts {
     shiftDates: new Set(),
     restDates: new Set(),
     quests: new Map(),
+    bodyweights: new Map(),
   };
   const importedSources = new Set<string>();
 
@@ -122,8 +125,11 @@ export function collectFacts(sorted: AriseEvent[]): Facts {
         }
         break;
       }
-      case 'bodyweight_logged':
-        break; // a fact for charts; XP comes via its quest
+      case 'bodyweight_logged': {
+        const p = e.payload as { kg: number; date: string };
+        facts.bodyweights.set(p.date, p.kg); // sorted order ⇒ LWW per date
+        break;
+      }
     }
   }
   return facts;
@@ -249,8 +255,11 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
   }
   totalXp += facts.shiftDates.size * XP.shift;
   statPools.vit += facts.shiftDates.size * XP.shift;
-  totalXp += facts.restDates.size * XP.rest;
-  statPools.rec += facts.restDates.size * XP.rest;
+  // Sanctuary rule (GDD §2.3): training on a rest day forfeits its recovery bonus
+  const trainingDateSet = new Set([...facts.sessions.values()].map((s) => s.date));
+  const honoredRests = [...facts.restDates].filter((d) => !trainingDateSet.has(d));
+  totalXp += honoredRests.length * XP.rest;
+  statPools.rec += honoredRests.length * XP.rest;
   for (const template of facts.quests.values()) totalXp += questXp(template);
 
   // --- level / tier ----------------------------------------------------------------
@@ -286,6 +295,8 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     .filter((c) => c.date === nowDate)
     .map((c) => c.sessionId);
 
+  const trainingDates = [...trainingDateSet].sort();
+
   return {
     totalXp,
     level: progress.level,
@@ -306,6 +317,13 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     prevByExercise,
     todayByExercise,
     clearedToday,
+    completedQuests: [...facts.quests.keys()],
+    shiftConfirmedToday: facts.shiftDates.has(nowDate),
+    trainingDates,
+    lastTrainingDate: trainingDates[trainingDates.length - 1],
+    bodyweights: [...facts.bodyweights.entries()]
+      .map(([date, kg]) => ({ date, kg }))
+      .sort((a, b) => (a.date < b.date ? -1 : 1)),
     eventCount: sorted.length,
   };
 }

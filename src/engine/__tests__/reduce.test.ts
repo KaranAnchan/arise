@@ -135,6 +135,66 @@ describe('reduce — amendments and quests', () => {
   });
 });
 
+describe('reduce — Sanctuary rule', () => {
+  it('forfeits the rest bonus when training was logged on the honored date', () => {
+    const events: AriseEvent[] = [
+      ...logSession('bench', '2026-06-07', [[60, 8], [60, 8]]), // 70 XP, trained on rest day
+      ev('rest_honored', { date: '2026-06-07' }),
+    ];
+    const s = reduce(events, cfg, '2026-06-07');
+    expect(s.totalXp).toBe(70); // training XP intact, +25 rest forfeited
+    expect(s.statPools.rec).toBe(0);
+  });
+
+  it('forfeits only the violated date, not other honored rests', () => {
+    const events: AriseEvent[] = [
+      ...logSession('bench', '2026-06-07', [[60, 8], [60, 8]]),
+      ev('rest_honored', { date: '2026-06-07' }), // violated
+      ev('rest_honored', { date: '2026-06-14' }), // honored
+    ];
+    const s = reduce(events, cfg, '2026-06-14');
+    expect(s.totalXp).toBe(70 + 25);
+    expect(s.statPools.rec).toBe(25);
+  });
+});
+
+describe('reduce — Phase 3 derived fields', () => {
+  it('keeps bodyweights last-write-wins per date, sorted ascending', () => {
+    const events: AriseEvent[] = [
+      ev('bodyweight_logged', { kg: 78, date: '2026-06-08' }, '2026-06-08T09:00:00.000Z'),
+      ev('bodyweight_logged', { kg: 77, date: '2026-06-01' }, '2026-06-01T09:00:00.000Z'),
+      ev('bodyweight_logged', { kg: 78.5, date: '2026-06-08' }, '2026-06-08T21:00:00.000Z'), // amend
+    ];
+    const s = reduce(events, cfg, '2026-06-08');
+    expect(s.bodyweights).toEqual([
+      { date: '2026-06-01', kg: 77 },
+      { date: '2026-06-08', kg: 78.5 },
+    ]);
+    expect(s.totalXp).toBe(0); // still charts-only
+  });
+
+  it('exposes completed quest ids and shift confirmation for today', () => {
+    const events: AriseEvent[] = [
+      ev('quest_completed', { questId: 'q1', template: 'clear_gate', date: '2026-06-01' }),
+      ev('shift_confirmed', { date: '2026-06-02' }),
+    ];
+    expect(reduce(events, cfg, '2026-06-02').shiftConfirmedToday).toBe(true);
+    expect(reduce(events, cfg, '2026-06-03').shiftConfirmedToday).toBe(false);
+    expect(reduce(events, cfg, '2026-06-02').completedQuests).toEqual(['q1']);
+  });
+
+  it('tracks training dates sorted ascending with the last one surfaced', () => {
+    const events = [
+      ...logSession('curl', '2026-06-03', [[20, 12]]),
+      ...logSession('bench', '2026-06-01', [[60, 8]]),
+    ];
+    const s = reduce(events, cfg, '2026-06-03');
+    expect(s.trainingDates).toEqual(['2026-06-01', '2026-06-03']);
+    expect(s.lastTrainingDate).toBe('2026-06-03');
+    expect(reduce([], cfg, '2026-06-03').lastTrainingDate).toBeUndefined();
+  });
+});
+
 describe('reduce — history import', () => {
   const importEvent = (id?: string) =>
     ev('history_imported', {
