@@ -118,8 +118,14 @@ async function reset(): Promise<void> {
   console.info('[ARISE:DEV] event log cleared');
 }
 
+/** Current derived state from the live log — lets smoke scripts assert on real XP. */
+async function state() {
+  const events = (await db.events.toArray()) as AriseEvent[];
+  return reduce(events, { program: ENGINE_PROGRAM, tiers: getManifest().tiers }, dateIso());
+}
+
 export function installDevTools(): void {
   if (!import.meta.env.DEV) return;
-  (window as unknown as Record<string, unknown>).arise = { seed, reset, db };
-  console.info('[ARISE:DEV] window.arise = { seed(level), reset() }');
+  (window as unknown as Record<string, unknown>).arise = { seed, reset, state, db };
+  console.info('[ARISE:DEV] window.arise = { seed(level), reset(), state() }');
 }

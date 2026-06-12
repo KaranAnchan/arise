@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "icons": "node scripts/make-icons.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:gate": "node scripts/smoke-gate.mjs",
+    "smoke:system": "node scripts/smoke-system.mjs"
   },
   "dependencies": {
     "@fontsource/martian-mono": "^5.2.7",
