@@ -13,13 +13,16 @@ import {
   makeStreak,
   sortEvents,
 } from './reduce';
+import { achievedWeight, bossXp, defeatedMilestones, isNamedMilestone } from './bosses';
 import { XP, streakMultiplier } from './xp';
 
 export interface TallyLine {
-  kind: 'sets' | 'progression' | 'weightUp' | 'gateClear';
+  kind: 'sets' | 'progression' | 'weightUp' | 'gateClear' | 'boss';
   /** exercise id for exercise lines; sessionId for the gate line */
   ref: string;
   xp: number;
+  /** boss lines only: the defeated milestone weight */
+  milestone?: number;
 }
 
 export interface GateTally {
@@ -29,7 +32,9 @@ export interface GateTally {
   /** streak multiplier applied to this date's gate XP */
   multiplier: number;
   baseTotal: number;
-  /** round(baseTotal × multiplier) — what the bar actually gains */
+  /** boss XP is never streak-multiplied (GDD §2.3) — itemized and added at face value */
+  bossTotal: number;
+  /** round(baseTotal × multiplier) + bossTotal — what the bar actually gains */
   total: number;
 }
 
@@ -62,6 +67,12 @@ export function tallyGate(
     lines.push({ kind: 'sets', ref: ex.id, xp: r.setXpSum });
     if (r.progression) lines.push({ kind: 'progression', ref: ex.id, xp: XP.progression });
     if (r.weightUp) lines.push({ kind: 'weightUp', ref: ex.id, xp: XP.weightUp });
+    const cleanMaxBefore = records
+      .slice(0, idx)
+      .reduce((m, r) => Math.max(m, achievedWeight(ex, r)), 0);
+    for (const milestone of defeatedMilestones(ex, rec, cleanMaxBefore)) {
+      lines.push({ kind: 'boss', ref: ex.id, xp: bossXp(ex.cls, isNamedMilestone(milestone)), milestone });
+    }
   }
 
   if (facts.gateClears.has(`${sessionId}|${date}`)) {
@@ -70,7 +81,16 @@ export function tallyGate(
 
   const { streakBefore } = makeStreak(facts, cfg.program);
   const multiplier = streakMultiplier(streakBefore(epochWeek(date)));
-  const baseTotal = lines.reduce((s, l) => s + l.xp, 0);
+  const baseTotal = lines.filter((l) => l.kind !== 'boss').reduce((s, l) => s + l.xp, 0);
+  const bossTotal = lines.filter((l) => l.kind === 'boss').reduce((s, l) => s + l.xp, 0);
 
-  return { sessionId, date, lines, multiplier, baseTotal, total: Math.round(baseTotal * multiplier) };
+  return {
+    sessionId,
+    date,
+    lines,
+    multiplier,
+    baseTotal,
+    bossTotal,
+    total: Math.round(baseTotal * multiplier) + bossTotal,
+  };
 }
