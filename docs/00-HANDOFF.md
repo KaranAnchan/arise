@@ -30,6 +30,85 @@ picking up the project starts here, then reads `01-PRD.md` → `02-GDD.md` →
 
 ---
 
+## Phase 4 — Ascension · completed 2026-06-12 · tag v0.4.0
+
+### What shipped
+- **Backend:** `supabase/migrations/0001_events_profiles.sql` — events (append-only,
+  `server_seq` identity, RLS select/insert own rows only, NO update/delete policies) +
+  profiles. `.env.example`; `.gitignore` already protected `.env`.
+- **Client:** `src/store/supabase.ts` exports the client **or null** — with no env the
+  app is identical to Phase 3 (verified by the smoke suite running env-less).
+- **Auth** (`src/store/auth.ts`): Google OAuth + email magic link; `useSession`;
+  on sign-in/restore, `adoptLocalEvents` rewrites `userId='local'` rows (synced=0 only)
+  to the uid — idempotent, runs every restore. `appendEvent` now stamps the active uid.
+  `signOutAndWipe` = explicit action only (AC-1.3); a token dying in the background
+  merely stops sync, never wipes.
+- **Sync:** `syncCore.ts` is the whole algorithm with injected (db, transport, uid) —
+  push synced=0 (server idempotent on id) → mark ONLY the pushed ids → pull batches
+  `server_seq > cursor`, advancing the cursor per batch. `sync.ts` wires the Supabase
+  transport, a status store (`useSyncStatus`: off/idle/syncing/error), 5s→5min
+  exponential backoff, and triggers: sign-in, focus, visibilitychange, online, 15-min
+  interval, post-tally (`TallyScreen` mount), post-import.
+- **Import:** `importShiftLift.ts` parses a raw `JSON.stringify(localStorage)` dump,
+  string-or-array values, or a bare exerciseId map → `history_imported`. `/settings`
+  has paste + file upload. Verified in-browser: +106 XP retroactive on seeded state.
+- **UI:** `/settings` (Auth + Import panels), `SyncDot` in the dashboard nav.
+- **Tests (12 new):** two-device convergence on real Dexie via fake-indexeddb —
+  identical full GameState after offline sessions on both (AC-7.2); concurrent same-set
+  amend → LWW, both events kept (AC-7.4); push idempotency; cursor/synced marking;
+  Postgres `+00:00` → `Z` normalization; mid-push append race. Import: 3 shapes,
+  garbage rejection, idempotent re-paste, overlapping exports don't double-count.
+
+### Decisions made (and why)
+- **Transport is an interface** (`push` idempotent-on-id, `pull` cursor-ascending);
+  the entire risky path is tested against an in-memory server without mocks of Dexie.
+- **Pulled `occurred_at` is normalized** through `new Date().toISOString()` — sortEvents
+  compares strings, so one `+00:00`-shaped timestamp would corrupt LWW ordering.
+- **Post-push marking targets the pushed ids only** — events appended during the network
+  await must stay synced=0 (regression-tested).
+- **Import `source` = content hash** (`shift-lift:fnv1a`): identical re-imports dedupe
+  via the reducer's importedSources; different exports merge safely because expansion
+  upserts by (exercise, date, setIndex) — overlap cannot double XP (tested).
+- Sign-out confirm is a two-tap in the UI, wipe stays out of the auth listener.
+
+### Architecture / schema changes
+- No event-type or Dexie schema changes. New: Supabase tables (SQL above), modules
+  `supabase.ts`/`auth.ts`/`syncCore.ts`/`sync.ts`/`importShiftLift.ts`, `/settings`.
+  `AriseDB` class export (named instances for tests); `appendEvent` uid stamping.
+
+### Known issues & deliberate deferrals
+- **Live-backend verification is pending provisioning** — convergence/LWW/idempotency
+  are proven at the integration-test level; phone+desktop and stranger-signup need a
+  real Supabase project (checklist below). RLS cross-user denial likewise.
+- "Imported Soul" relic visual lands with the Phase 5 relic system; the import itself
+  works now.
+- `profiles` table is created but unused until Phase 5 (username, equipped title).
+- Exactly-PULL_LIMIT pulls do one extra empty round-trip — harmless.
+- Sanctuary back-fill duplicate (two devices, same date, different ids) confirmed safe
+  in the convergence tests — `restDates` is a date Set.
+
+### Supabase setup (one-time, ~10 min — required before live sync)
+1. supabase.com → New project → SQL Editor → run
+   `supabase/migrations/0001_events_profiles.sql`.
+2. Auth → URL Configuration → add the app origin(s) (localhost:5173 + the deployed URL).
+3. Auth → Providers → enable Google (follow Supabase's Google Cloud OAuth guide);
+   email/magic-link is on by default.
+4. `cp .env.example .env`, paste Project URL + anon key, restart `npm run dev`.
+5. `/settings` → link account on two devices → train offline on both → both show
+   SYNCED and identical LV/XP. That's AC-7.2 live.
+
+### Instructions for the next phase (Phase 5 — Endgame)
+- Boss milestones read from timelines already exposed; encounter lifecycle is derived
+  state (no new event types planned — check GDD §6 before inventing any).
+- Relics: "Imported Soul" = any `history_imported` fact exists. Titles equip via the
+  `profiles.settings` jsonb — first real use of that table; sync it read-through only.
+- PWA pass: port `make-icons.mjs` is DONE (Phase 1); remaining: CacheFirst for
+  `assets/characters/*`, update-prompt copy exists (`SYSTEM.update`), Lighthouse run.
+- Bundle is 142 KB gz with supabase-js — room under the 350 KB budget; code-split the
+  settings route only if Lighthouse complains.
+
+---
+
 ## Phase 3 — The System Awakens · completed 2026-06-12 · tag v0.3.0
 
 ### What shipped

@@ -9,6 +9,7 @@ import { dateIso, daysBetween } from '../../store/dates';
 import { useGameState } from '../../store/useGameState';
 import { CharacterCard } from '../../ui/CharacterCard';
 import { RosterStrip } from '../../ui/RosterStrip';
+import { SyncDot } from '../../ui/SyncDot';
 import { SystemText } from '../../ui/SystemText';
 import { SystemWindow } from '../../ui/SystemWindow';
 import { QuestPanel } from './QuestPanel';
@@ -95,9 +96,15 @@ export function Dashboard() {
     <main className="dashboard">
       <header className="app-header span-2">
         <h1 className="app-title">{SYSTEM.appName}</h1>
-        <Link to="/profile" className="profile-link system-text">
-          [{SYSTEM.profile.link}]
-        </Link>
+        <nav className="app-nav">
+          <SyncDot />
+          <Link to="/profile" className="profile-link system-text">
+            [{SYSTEM.profile.link}]
+          </Link>
+          <Link to="/settings" className="profile-link system-text">
+            [{SYSTEM.settings.link}]
+          </Link>
+        </nav>
       </header>
       <div className="span-2">
         <SystemCommentary state={state} />

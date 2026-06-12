@@ -16,12 +16,13 @@ export interface MetaRow {
   value: string;
 }
 
-class AriseDB extends Dexie {
+export class AriseDB extends Dexie {
   events!: Table<StoredEvent, string>;
   meta!: Table<MetaRow, string>;
 
-  constructor() {
-    super('arise');
+  /** `name` is overridable so sync tests can run two "devices" side by side. */
+  constructor(name = 'arise') {
+    super(name);
     this.version(1).stores({
       events: 'id, occurredAt, synced',
       meta: 'key',
