@@ -151,6 +151,27 @@ export interface ExerciseSessionRecord {
   sets: LoggedSet[];
 }
 
+export interface BossDefeat {
+  exerciseId: string;
+  date: string;
+  milestone: number;
+  named: boolean;
+  xp: number;
+}
+
+export interface PendingBoss {
+  exerciseId: string;
+  sessionId: string;
+  milestone: number;
+  repsLo: number;
+}
+
+/** Relics are derived facts (TDD: never stored); display names live in data. */
+export type Relic =
+  | { kind: 'pr'; exerciseId: string; milestone: number; date: string }
+  | { kind: 'streak10' }
+  | { kind: 'import' };
+
 export interface GameState {
   totalXp: number;
   level: number;
@@ -185,5 +206,15 @@ export interface GameState {
   lastTrainingDate?: string | undefined;
   /** bodyweight log, sorted by date ascending */
   bodyweights: Array<{ date: string; kg: number }>;
+  /** every PR boss ever defeated, sorted (date, exerciseId, milestone) */
+  bossesDefeated: BossDefeat[];
+  /** encounters currently announced (next milestone within one clean session) */
+  pendingBosses: PendingBoss[];
+  /** trophy case — derived, ordered: PRs by date, then streak10, then import */
+  relics: Relic[];
+  /** tier names reached (titles); equipping is a UI/profile concern */
+  titles: string[];
+  /** longest run of fully-honored weeks ever (feeds the Gatebreaker relic) */
+  maxStreakWeeks: number;
   eventCount: number;
 }

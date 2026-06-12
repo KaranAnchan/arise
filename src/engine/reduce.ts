@@ -24,6 +24,8 @@ import type {
   StatTag,
 } from './types';
 import { XP, levelFromTotalXp, questXp, setXp, statDisplay, streakMultiplier, xpToNext } from './xp';
+import { achievedWeight, bossXp, defeatedMilestones, isNamedMilestone, pendingMilestone } from './bosses';
+import type { BossDefeat, PendingBoss, Relic } from './types';
 
 const DAY_MS = 86_400_000;
 
@@ -51,6 +53,8 @@ export interface Facts {
   quests: Map<string, string>;
   /** date → kg (last write per date wins) */
   bodyweights: Map<string, number>;
+  /** history_imported sources already applied (feeds the Imported Soul relic) */
+  importSources: Set<string>;
 }
 
 export function sortEvents(events: AriseEvent[]): AriseEvent[] {
@@ -69,8 +73,9 @@ export function collectFacts(sorted: AriseEvent[]): Facts {
     restDates: new Set(),
     quests: new Map(),
     bodyweights: new Map(),
+    importSources: new Set(),
   };
-  const importedSources = new Set<string>();
+  const importedSources = facts.importSources;
 
   const upsertSet = (p: SetPayload) => {
     const key = `${p.exerciseId}|${p.sessionDate}`;
@@ -175,7 +180,15 @@ export function makeStreak(facts: Facts, program: EngineProgram) {
     while (honored(w - 1 - n)) n += 1;
     return n;
   };
-  return { honored, streakBefore };
+  /** longest honored run anywhere in history (Gatebreaker relic) */
+  const maxRun = (): number => {
+    let best = 0;
+    for (const w of clearsByWeek.keys()) {
+      if (honored(w)) best = Math.max(best, streakBefore(w) + 1);
+    }
+    return best;
+  };
+  return { honored, streakBefore, maxRun };
 }
 
 /**
@@ -219,10 +232,16 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     dateBuckets.set(date, (dateBuckets.get(date) ?? 0) + amount);
   };
 
+  // boss XP is OUTSIDE the date buckets: the streak multiplier covers gate-derived
+  // XP only (GDD §2.3); a PR is its own reward at face value
+  const bossesDefeated: BossDefeat[] = [];
+  const finalMaxByExercise = new Map<string, { clean: number; touched: number }>();
+
   for (const [exerciseId, records] of byExercise) {
     const ex = cfg.program.exercises[exerciseId];
     let prev: ExerciseSessionRecord | undefined;
     let allTimeMax = 0;
+    let cleanMax = 0; // best weight ever HELD (full sets in range) — the boss baseline
     for (const rec of records) {
       const r = exerciseSessionXp(ex, rec, prev, allTimeMax);
       let sessionXp = r.setXpSum;
@@ -235,24 +254,46 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
         sessionXp += XP.weightUp;
         if (ex?.cls === 'compound') statPools.str += XP.weightUp;
       }
-      if (ex) allTimeMax = Math.max(allTimeMax, ...rec.sets.map((s) => s.weightKg));
+      if (ex) {
+        for (const milestone of defeatedMilestones(ex, rec, cleanMax)) {
+          const named = isNamedMilestone(milestone);
+          const xp = bossXp(ex.cls, named);
+          bossesDefeated.push({ exerciseId, date: rec.date, milestone, named, xp });
+          statPools[ex.cls === 'compound' ? 'str' : 'agi'] += xp;
+        }
+        cleanMax = Math.max(cleanMax, achievedWeight(ex, rec));
+        allTimeMax = Math.max(allTimeMax, ...rec.sets.map((s) => s.weightKg));
+      }
       addToDate(rec.date, sessionXp);
       prev = rec;
     }
+    if (ex) finalMaxByExercise.set(exerciseId, { clean: cleanMax, touched: allTimeMax });
   }
+  bossesDefeated.sort((a, b) =>
+    a.date !== b.date
+      ? a.date < b.date
+        ? -1
+        : 1
+      : a.exerciseId !== b.exerciseId
+        ? a.exerciseId < b.exerciseId
+          ? -1
+          : 1
+        : a.milestone - b.milestone,
+  );
 
   for (const clear of facts.gateClears.values()) {
     addToDate(clear.date, XP.gateClear);
     statPools.vit += XP.gateClear;
   }
 
-  const { honored, streakBefore } = makeStreak(facts, cfg.program);
+  const { honored, streakBefore, maxRun } = makeStreak(facts, cfg.program);
 
   // --- total XP -------------------------------------------------------------------
   let totalXp = 0;
   for (const [date, bucket] of dateBuckets) {
     totalXp += Math.round(bucket * streakMultiplier(streakBefore(epochWeek(date))));
   }
+  for (const boss of bossesDefeated) totalXp += boss.xp;
   totalXp += facts.shiftDates.size * XP.shift;
   statPools.vit += facts.shiftDates.size * XP.shift;
   // Sanctuary rule (GDD §2.3): training on a rest day forfeits its recovery bonus
@@ -297,6 +338,29 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
 
   const trainingDates = [...trainingDateSet].sort();
 
+  // --- endgame derivations -----------------------------------------------------------
+  const pendingBosses: PendingBoss[] = [...finalMaxByExercise.entries()]
+    .map(([exerciseId, max]) => {
+      const ex = cfg.program.exercises[exerciseId];
+      const milestone = pendingMilestone(ex, max.clean, max.touched);
+      return milestone === null
+        ? null
+        : { exerciseId, sessionId: ex.sessionId, milestone, repsLo: ex.scheme.repsLo };
+    })
+    .filter((p): p is PendingBoss => p !== null)
+    .sort((a, b) => (a.exerciseId < b.exerciseId ? -1 : 1));
+
+  const maxStreakWeeks = maxRun();
+  const relics: Relic[] = [
+    ...bossesDefeated
+      .filter((b) => b.named)
+      .map((b): Relic => ({ kind: 'pr', exerciseId: b.exerciseId, milestone: b.milestone, date: b.date })),
+    ...(maxStreakWeeks >= 10 ? [{ kind: 'streak10' } as Relic] : []),
+    ...(facts.importSources.size > 0 ? [{ kind: 'import' } as Relic] : []),
+  ];
+
+  const titles = cfg.tiers.slice(0, tierIndex + 1).map((t) => t.name);
+
   return {
     totalXp,
     level: progress.level,
@@ -324,6 +388,11 @@ export function reduce(events: AriseEvent[], cfg: ReduceConfig, nowIso?: string)
     bodyweights: [...facts.bodyweights.entries()]
       .map(([date, kg]) => ({ date, kg }))
       .sort((a, b) => (a.date < b.date ? -1 : 1)),
+    bossesDefeated,
+    pendingBosses,
+    relics,
+    titles,
+    maxStreakWeeks,
     eventCount: sorted.length,
   };
 }

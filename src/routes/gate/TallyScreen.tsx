@@ -8,6 +8,8 @@ import { useNavigate } from '@tanstack/react-router';
 import { reduce } from '../../engine/reduce';
 import { tallyGate } from '../../engine/tally';
 import type { AriseEvent, SetPayload, GateClearedPayload } from '../../engine/types';
+import { bossEpithet } from '../../engine/bosses';
+import { bossShortName } from '../../data/endgame';
 import { SESSIONS } from '../../data/program';
 import { SYSTEM } from '../../data/strings';
 import { requestSync } from '../../store/sync';
@@ -61,7 +63,7 @@ export function TallyScreen({ sessionId, date, onClose }: Props) {
   const { tally, before, after } = computed;
   const leveledUp = after.level > before.level;
 
-  const lineLabel = (kind: string, ref: string): string => {
+  const lineLabel = (kind: string, ref: string, milestone?: number): string => {
     switch (kind) {
       case 'sets':
         return SYSTEM.tally.sets(exerciseName(ref, sessionId));
@@ -69,10 +71,18 @@ export function TallyScreen({ sessionId, date, onClose }: Props) {
         return SYSTEM.tally.progression(exerciseName(ref, sessionId));
       case 'weightUp':
         return SYSTEM.tally.weightUp(exerciseName(ref, sessionId));
+      case 'boss':
+        return SYSTEM.boss.felled(bossShortName(ref), bossEpithet(sessionId), milestone ?? 0);
       default:
         return SYSTEM.tally.gateClear;
     }
   };
+
+  // boss XP sits outside the streak multiplier — render gate lines, the multiplier,
+  // THEN the kills; new encounters announce at this tally (GDD: prior session's tally)
+  const gateLines = tally.lines.filter((l) => l.kind !== 'boss');
+  const bossLines = tally.lines.filter((l) => l.kind === 'boss');
+  const announcements = after.pendingBosses.filter((b) => b.sessionId === sessionId);
 
   const finish = () => {
     if (leveledUp) setCeremony(true);
@@ -100,23 +110,38 @@ export function TallyScreen({ sessionId, date, onClose }: Props) {
       <div className="tally-window">
         <p className="system-text">[{SYSTEM.tally.title(SESSIONS[sessionId]?.gateName ?? sessionId)}]</p>
         <div className="tally-lines">
-          {tally.lines.map((l, i) => (
+          {gateLines.map((l, i) => (
             <div className="tally-line" key={`${l.kind}-${l.ref}-${i}`} style={{ animationDelay: `${i * 90}ms` }}>
               <span>{lineLabel(l.kind, l.ref)}</span>
               <span className="tally-xp">+{Math.round(l.xp)}</span>
             </div>
           ))}
           {tally.multiplier > 1 && (
-            <div className="tally-line" style={{ animationDelay: `${tally.lines.length * 90}ms` }}>
+            <div className="tally-line" style={{ animationDelay: `${gateLines.length * 90}ms` }}>
               <span>{SYSTEM.tally.streak(tally.multiplier)}</span>
               <span className="tally-xp">×{tally.multiplier.toFixed(1)}</span>
             </div>
           )}
+          {bossLines.map((l, i) => (
+            <div
+              className="tally-line tally-line--boss"
+              key={`boss-${l.ref}-${i}`}
+              style={{ animationDelay: `${(gateLines.length + 1 + i) * 90}ms` }}
+            >
+              <span>{lineLabel(l.kind, l.ref, l.milestone)}</span>
+              <span className="tally-xp">+{l.xp}</span>
+            </div>
+          ))}
         </div>
         <div className="tally-total">
           <span>{SYSTEM.tally.total}</span>
           <span className="tally-xp">+{tally.total}</span>
         </div>
+        {announcements.map((b) => (
+          <p className="system-text boss-announce" key={b.exerciseId}>
+            [{SYSTEM.boss.appeared(bossShortName(b.exerciseId), bossEpithet(sessionId), b.milestone, b.repsLo)}]
+          </p>
+        ))}
         <XPBar xpIntoLevel={after.xpIntoLevel} xpToNext={after.xpToNext} totalXp={after.totalXp} />
         <button type="button" className="cta" onClick={finish}>
           {SYSTEM.tally.continue}

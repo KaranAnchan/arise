@@ -30,6 +30,84 @@ picking up the project starts here, then reads `01-PRD.md` → `02-GDD.md` →
 
 ---
 
+## Phase 5 — Endgame · completed 2026-06-12 · tag v0.5.0 (= v1 code-complete)
+
+### What shipped
+- **Bosses** (`src/engine/bosses.ts`, derived — no events): milestones every +10 kg
+  (compound) / +5 kg (accessory). Defeat = the milestone weight held for every
+  programmed set at the bottom of the rep range; XP 300/150 (+100 at "named" 50 kg
+  multiples), fed to STR/AGI, **never streak-multiplied** (GDD §2.3). Announcement
+  when the next milestone is within one clean +2.5 kg session — rendered at the
+  prior session's tally (GDD §6) and as a pulsing banner inside the Gate.
+- **Clean-baseline rule (bug caught by tests):** defeats and announcements key off
+  the best weight ever HELD (full sets in range), not the touched max — otherwise a
+  failed attempt that touched 80 kg would bury the boss forever. A failed attempt
+  changes nothing; the kill lands whenever the weight is finally held. Tested.
+- **Relics** (derived): named-milestone PRs (hand-named: IRON BOOTS, CRIMSON
+  STANDARD, TITANSPINE; generated sigils otherwise), GATEBREAKER SIGIL (any
+  10-honored-week run, ever), IMPORTED SOUL (any history import). `RelicGrid` in
+  the profile.
+- **Titles:** tier names reached; equip in the profile (stored in Dexie `meta` —
+  display preference, not game state); shown under the character name when it
+  differs from the current tier.
+- **TierGallery:** all 10 tiers, reached ones show their aura gradient + name,
+  the rest are `CLASSIFIED — LV n`.
+- **Tally:** gate lines → streak multiplier → boss lines (face value) → total →
+  boss announcements; `GateTally` gained `bossTotal`; the tally-equals-reducer-delta
+  invariant holds with bosses in play (tested).
+- **PWA/hardening:** CacheFirst for character art was already configured (Phase 1).
+  Lighthouse on the production build: performance 93 / accessibility 95 /
+  best-practices 100, 256 KiB total. Offline cold start verified by killing the
+  server under a controlled SW — the app fully renders from precache.
+- **Deploy:** `netlify.toml` (SPA redirect + build), `public/_redirects` (Drop
+  fallback), `docs/06-DEPLOY.md` (adapted Shift + Lift Route A; git-linked Netlify
+  recommended; post-deploy checklist).
+- 25 new unit tests (114 total); system smoke now also covers relics, gallery,
+  titles at a deep seed.
+
+### Decisions made (and why)
+- **GDD §7 says relics are "stored as events"; the TDD says relics/bosses/titles are
+  derived, never stored. The TDD wins** (append-only log + pure reducer is the
+  project's architecture law; no new event types were added). GDD wording should be
+  read as "persistent because the facts that earn them are".
+- Boss XP outside date buckets — the streak multiplier explicitly covers gate-derived
+  XP only; a PR is worth its face value.
+- First-ever session establishes a baseline and can defeat nothing (no XP farming by
+  walking in heavy).
+- **Import order matters and that's by design:** importing history heavier than later
+  live sessions recontextualizes those sessions as sandbagged and can LOWER totalXp
+  (the honesty law applied retroactively). The product flow is import-first; the
+  smoke mirrors it and documents the reasoning inline.
+- Boss short-names + relic names live in `src/data/endgame.ts` (content layer);
+  the engine only derives which bosses/relics exist.
+
+### Architecture / schema changes
+- None to events or storage schemas. GameState grew `bossesDefeated`,
+  `pendingBosses`, `relics`, `titles`, `maxStreakWeeks`; `Facts` exposes
+  `importSources`; `makeStreak` gained `maxRun()`; `XP.boss` constants.
+
+### Known issues & deliberate deferrals
+- **Exit criteria pending Karan (same as Phase 4's backend):** deploy at a real URL
+  (10 min via docs/06-DEPLOY.md), install on phone+desktop, live two-device sync,
+  then formally retire Shift + Lift. Everything code-side is done and verified.
+- Tier-up ceremony already showed tier arcs (Phase 2) — re-verified, no change.
+- Gallery holds 10 tier slots, not 100 level images (none exist yet); virtualize
+  only if per-level art ever lands (manifest supports it — PRD G8).
+- Title sync across devices (profiles.settings) deferred post-v1; titles re-derive
+  everywhere anyway, only the equipped CHOICE is per-device.
+- Boss names use a curated short-name map; new exercises fall back to the id.
+
+### Instructions for whoever touches this next (post-v1)
+- The backlog parking lot (build plan §end) is the only sanctioned post-v1 list.
+- Balance pass: XP.boss constants are untouched theory — revisit after real weeks,
+  same as the Phase 1 constants note. All knobs live in `XP`.
+- If GDD §7's three example relics ever need exact-name parity, extend
+  `NAMED_RELICS` in `src/data/endgame.ts` — never the engine.
+- Before any new feature: read the rejected-mechanics table (GDD §9). It exists so
+  v1.1 doesn't un-design v1.
+
+---
+
 ## Phase 4 — Ascension · completed 2026-06-12 · tag v0.4.0
 
 ### What shipped

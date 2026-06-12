@@ -22,6 +22,13 @@ export const XP = {
     log_bodyweight: 10,
     review_form: 10,
   } as Record<string, number>,
+  /** boss defeats (GDD §6): by lift class, +bonus at "named" 50 kg milestones.
+   *  NOT streak-multiplied — the multiplier covers gate-derived XP only (GDD §2.3). */
+  boss: {
+    compound: 300,
+    accessory: 150,
+    namedBonus: 100,
+  },
   /** streak: ×(1 + step × consecutiveWeeks), capped */
   streakStep: 0.1,
   streakCap: 1.5,
