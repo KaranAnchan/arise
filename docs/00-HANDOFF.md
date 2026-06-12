@@ -30,6 +30,83 @@ picking up the project starts here, then reads `01-PRD.md` → `02-GDD.md` →
 
 ---
 
+## Phase 3 — The System Awakens · completed 2026-06-12 · tag v0.3.0
+
+### What shipped
+- **Engine:** Sanctuary forfeit rule (training on an honored rest date voids that date's
+  +25/REC — and nothing else); `bodyweights` facts (LWW per date); GameState grew
+  `completedQuests` / `shiftConfirmedToday` / `trainingDates` / `lastTrainingDate` /
+  `bodyweights`.
+- **`src/engine/quests.ts`:** deterministic daily quest generation (GDD §4.1) — pure
+  function of (day type, sessionId, date, GameState, program). Stable ids
+  (`date|template|subject`), 2–3/day, claim semantics `auto`/`manual`/`intrinsic`,
+  `questConditionMet` + `questDone` predicates. 13 unit tests.
+- **`src/store/watchers.ts`:** quest auto-claim (emits `quest_completed` when an 'auto'
+  condition is met by real events) + Sanctuary back-fill (`rest_honored` for every past
+  roster rest day with no training, once per boot, idempotent). Pure parts unit-tested;
+  `useWatchers` mounted in a new root `Shell` in main.tsx.
+- **Dashboard:** Daily Quests panel (QuestRow ◇/◆, manual CLAIM button, inline bodyweight
+  stepper+LOG when the quest is offered); Mandatory Quest panel now confirms with one tap
+  (`shift_confirmed`, locked after via `shiftConfirmedToday`) and shows System-voiced
+  quest intel ported from Shift + Lift's work-day guidance; Sanctuary panel explains the
+  judged-at-dawn forfeit rule.
+- **`/profile`:** StatPanel (stat cells + raw XP pools), bodyweight sparkline, System
+  Records — per-exercise session count, best set, top-weight sparkline built from
+  `buildTimelines` over the live log (same math as the reducer, can't disagree).
+- **Voice pass:** absence comment (≥4 days since last training), streak-severed line
+  (state diff vs localStorage), all new panels speak through `strings.ts`.
+- `npm run smoke:system` (+ `smoke:gate` alias): drives quests render → bodyweight log →
+  auto-claim (+10 verified from real state) → shift confirm (+30) → profile records.
+  `window.arise.state()` added to the dev tools for state assertions from smoke scripts.
+
+### Decisions made (and why)
+- **Intrinsic quests never emit `quest_completed`.** GDD's XP column for "Endurance
+  Trial"/"Honor the Sanctuary" *is* the shift/rest bonus; a quest event would double-pay.
+  They mirror their underlying event in the UI instead.
+- **Quest generation must be day-stable** — the system smoke caught the bug: fulfilling
+  log_bodyweight removed it from the generated list before the watcher could claim it.
+  `bodyweightDue` ignores today's entry; `review_form` picks via `prevByExercise`
+  (strictly before today), not `lastByExercise`. Regression-tested.
+- honor_sanctuary's live condition is always false ("JUDGED AT DAWN") — `rest_honored`
+  lands on a later boot; its XP can't be missed, so the quest visually expiring unclaimed
+  costs nothing.
+- Streak-severed commentary uses localStorage (`arise.streakWeeks`), not an event —
+  it's per-device display nicety; deriving it from events would pollute the log.
+- review_form is manual-claim (tap pays +10): the System can't verify reading; GDD only
+  forbids manual claims for *verifiable* things.
+
+### Architecture / schema changes
+- No new event types, no schema changes. New modules: `engine/quests.ts`,
+  `store/watchers.ts`, `routes/profile/*`, `ui/Sparkline.tsx`. Root `Shell` component
+  hosts watchers.
+
+### Known issues & deliberate deferrals
+- Quest auto-claim runs where `useQuests` is mounted (QuestPanel/dashboard): a condition
+  met mid-gate claims when the user returns to the dashboard. Tally deliberately excludes
+  quest XP (it itemizes the gate only), so nothing is lost or double-shown.
+- Sanctuary back-fill will run on every device in Phase 4; two devices may emit
+  `rest_honored` for the same date with different event ids — safe, `restDates` is a
+  date Set, but expect duplicate events in the synced log.
+- Streak-severed line shows once per device (localStorage), and absence/severed lines
+  replace the greeting rather than stacking — keep it terse.
+- Profile charts are top-weight sparklines, not full axes/tooltips charts — revisit in
+  Phase 5 polish if the data earns it.
+
+### Instructions for the next phase (Phase 4 — Ascension)
+- `appendEvent`/`appendEvents` remained the only write paths (watchers comply) — the
+  sync queue can trust `synced: 0` rows.
+- The local→uid rewrite on first sign-in must rewrite `userId` on EVERY event including
+  watcher-emitted ones (`quest_completed`, `rest_honored`).
+- Push idempotency: server insert keyed on event `id`; the Sanctuary duplicate-date case
+  above is the test to write for cross-device convergence.
+- Import (`history_imported`) already replays through the XP pipeline and is idempotent
+  per `source` — the Shift + Lift importer only needs to map the export to
+  `ImportedLogEntry[]`.
+- `window.arise.state()` is the fastest way to assert sync convergence in integration
+  tests (state hash equality across devices).
+
+---
+
 ## Phase 2 — The Gate · completed 2026-06-11 · tag v0.2.0
 
 ### What shipped
